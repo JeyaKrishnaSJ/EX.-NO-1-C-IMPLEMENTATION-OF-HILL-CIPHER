@@ -15,96 +15,101 @@ STEP-4: Multiply the two matrices to obtain the cipher text of length three.
 
 STEP-5: Combine all these groups to get the complete cipher text.
 
-## PROGRAM: 
-    #include <stdio.h>
-    #include <string.h>
-    #include <ctype.h>
-    void prepareKeyMatrix(char key[], int keyMatrix[3][3]);
-    void prepareText(char text[]);
-    void multiplyMatrices(int keyMatrix[3][3], int textVector[3], int cipherMatrix[3]);
-    void encryptGroup(char keyMatrix[3][3], char text[], char cipher[], int startIdx);
-    void encryptText(char text[], char key[], char cipher[]);
+## PROGRAM:
+```
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
 
-    int main() {
-    char text[100], key[10], cipher[100];
-    printf("Enter the plain text: ");
-    gets(text);
-    printf("Enter the key (9 characters): ");
-    gets(key);
-    encryptText(text, key, cipher);
-    printf("Cipher text: %s\n", cipher);
+int keymat[3][3] = { { 1, 2, 1 }, { 2, 3, 2 }, { 2, 2, 1 } };
+int invkeymat[3][3] = { { -1, 0, 1 }, { 2, -1, 0 }, { -2, 2, -1 } };
+char key[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    return 0;
-    }
-    void prepareKeyMatrix(char key[], int keyMatrix[3][3]) {
-    int i, j, k = 0;
-    for(i = 0; i < 3; i++) {
-        for(j = 0; j < 3; j++) {
-            keyMatrix[i][j] = (toupper(key[k]) - 'A') % 26;
-            k++;
-        }
-    }
-    }
+char* encode(char a, char b, char c) {
+    static char ret[4];
+    int x, y, z;
+    int posa = (int) a - 65;
+    int posb = (int) b - 65;
+    int posc = (int) c - 65;
 
-    void prepareText(char text[]) {
-    int i, j = 0;
-    char prepared[100];
-    
-    for(i = 0; i < strlen(text); i++) {
-        if (isalpha(text[i])) {
-            prepared[j++] = toupper(text[i]);
-        }
-    }
-    while (j % 3 != 0) {
-        prepared[j++] = 'X';
-    }
-    prepared[j] = '\0';
-    strcpy(text, prepared);
-    }
+    x = posa * keymat[0][0] + posb * keymat[1][0] + posc * keymat[2][0];
+    y = posa * keymat[0][1] + posb * keymat[1][1] + posc * keymat[2][1];
+    z = posa * keymat[0][2] + posb * keymat[1][2] + posc * keymat[2][2];
 
-    void multiplyMatrices(int keyMatrix[3][3], int textVector[3], int cipherMatrix[3]) {
-    int i, j;
-    for(i = 0; i < 3; i++) {
-        cipherMatrix[i] = 0;
-        for(j = 0; j < 3; j++) {
-            cipherMatrix[i] += keyMatrix[i][j] * textVector[j];
-        }
-        cipherMatrix[i] = cipherMatrix[i] % 26;
-    }
-    }
+    ret[0] = key[x % 26];
+    ret[1] = key[y % 26];
+    ret[2] = key[z % 26];
+    ret[3] = '\0';
 
-    void encryptGroup(char keyMatrix[3][3], char text[], char cipher[], int startIdx) {
-    int i;
-    int textVector[3], cipherMatrix[3];
-
-    for(i = 0; i < 3; i++) {
-        textVector[i] = text[startIdx + i] - 'A';
-    }
-
-    multiplyMatrices(keyMatrix, textVector, cipherMatrix);
-
-    for(i = 0; i < 3; i++) {
-        cipher[startIdx + i] = cipherMatrix[i] + 'A';
-    }
-    }
-
-    void encryptText(char text[], char key[], char cipher[]) {
-    int keyMatrix[3][3], i;
-
-    prepareText(text);
-    prepareKeyMatrix(key, keyMatrix);
-
-    for(i = 0; i < strlen(text); i += 3) {
-        encryptGroup(keyMatrix, text, cipher, i);
-    }
-    cipher[i] = '\0';
+    return ret;
 }
 
+char* decode(char a, char b, char c) {
+    static char ret[4];
+    int x, y, z;
+    int posa = (int) a - 65;
+    int posb = (int) b - 65;
+    int posc = (int) c - 65;
+
+    x = posa * invkeymat[0][0] + posb * invkeymat[1][0] + posc * invkeymat[2][0];
+    y = posa * invkeymat[0][1] + posb * invkeymat[1][1] + posc * invkeymat[2][1];
+    z = posa * invkeymat[0][2] + posb * invkeymat[1][2] + posc * invkeymat[2][2];
+
+    ret[0] = key[(x % 26 < 0) ? (26 + x % 26) : (x % 26)];
+    ret[1] = key[(y % 26 < 0) ? (26 + y % 26) : (y % 26)];
+    ret[2] = key[(z % 26 < 0) ? (26 + z % 26) : (z % 26)];
+    ret[3] = '\0';
+
+    return ret;
+}
+
+int main() {
+    char msg[1000];
+    char enc[1000] = "";
+    char dec[1000] = "";
+    int n;
+
+    strcpy(msg, "HelloWorld");
+    printf("Simulation of Hill Cipher\n");
+    printf("Input message : %s\n", msg);
+
+    for (int i = 0; i < strlen(msg); i++) {
+        msg[i] = toupper(msg[i]);
+    }
+
+    // Remove spaces
+    n = strlen(msg) % 3;
+    // Append padding text X
+    if (n != 0) {
+        for (int i = 1; i <= (3 - n); i++) {
+            strcat(msg, "X");
+        }
+    }
+    printf("Padded message : %s\n", msg);
+
+    for (int i = 0; i < strlen(msg); i += 3) {
+        char a = msg[i];
+        char b = msg[i + 1];
+        char c = msg[i + 2];
+        strcat(enc, encode(a, b, c));
+    }
+    printf("Encoded message : %s\n", enc);
+
+    for (int i = 0; i < strlen(enc); i += 3) {
+        char a = enc[i];
+        char b = enc[i + 1];
+        char c = enc[i + 2];
+        strcat(dec, decode(a, b, c));
+    }
+    printf("Decoded message : %s\n", dec);
+
+    return 0;
+}
+   
+```
+
 ## OUTPUT:
-Enter the plain text: good luck
+![Screenshot 2024-11-08 190744](https://github.com/user-attachments/assets/3daac955-59ef-4721-856b-541dc0516113)
 
-Enter the key (9 characters): qwertyuio
-
-Cipher text: SCMGMMGWA
 ## RESULT:
   Thus the hill cipher substitution technique had been implemented successfully.
